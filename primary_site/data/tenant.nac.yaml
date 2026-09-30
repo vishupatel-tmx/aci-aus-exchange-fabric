@@ -1,0 +1,45 @@
+# data/tenants.yaml
+---
+apic:
+  tenants:
+    - name: "Tenant01"
+      description: "Tenant01 for Australia Stock Exchange"
+      
+      # 1. Virtual Routing and Forwarding (VRF)
+      vrfs:
+        - name: "VRF_01"
+          description: "VRF for Tenant01 - nac-aci"
+          # Unenforced mode bypasses security contracts to reduce hardware latency lookup
+          enforcement_preference: "unenforced" 
+          bd_enforced_enable: false
+
+      # 2. Bridge Domains (Tuned for HFT)
+      bridge_domains:
+        - name: "BD_01"
+          vrf: "VRF_01"
+          # Disable IP routing (assuming pure L2 multicast feed)
+          unicast_routing: false 
+          # Flood unknown unicast instead of using spine proxy (crucial for UDP feeds)
+          l2_unknown_unicast: "flood"
+          # Force ARP flooding in hardware
+          arp_flooding: true
+          # Flood Broadcast, Unknown Unicast, and Multicast (BUM) traffic
+          multi_destination_flooding: "bd-flood"
+
+      # 3. Application Profiles and EPGs
+      application_profiles:
+        - name: "AP_01"
+          endpoint_groups:
+            # EPG 1: The Market Data Feed
+            - name: "EPG_01"
+              bridge_domain: "BD_01"
+              # Static Port Bindings (Hardcoding servers to switch ports)
+              static_ports:
+                - node_id: 154 # Leaf Switch ID
+                  port: 9     # Port eth1/10
+                  vlan: 100    # VLAN encapsulation
+                  mode: "regular" # Access port
+                - node_id: 102
+                  port: 10
+                  vlan: 150
+                  mode: "regular"
